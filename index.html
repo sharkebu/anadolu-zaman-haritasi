@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anadolu Zaman Haritası</title>
+<meta name="description" content="Göbekli Tepe'den Cumhuriyet'e Anadolu'nun 12.000 yıllık tarihi tek haritada: 127 yer, savaş ve olay; dönem dönem kim nereye hükmetti, turlar ve sınavlarla.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:title" content="Anadolu Zaman Haritası">
+<meta property="og:description" content="Göbekli Tepe'den Cumhuriyet'e, bu topraklarda neler yaşandı? Etkileşimli tarih atlası.">
+<meta property="og:image" content="icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#ece3d1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151c" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Zaman Haritası">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script>
+  // Tema tercihini sayfa çizilmeden uygula (beyaz/koyu parlamayı önler)
+  try { var t = JSON.parse(localStorage.getItem("azh.theme")); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (_) {}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://upload.wikimedia.org">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="map" aria-label="Anadolu haritası"></div>
+
+<aside id="side" class="panel" aria-label="Kayıtlar">
+  <div class="brand">
+    <div class="brand-t">
+      <h1>Anadolu Zaman Haritası</h1>
+      <p>Göbekli Tepe'den Cumhuriyet'e, bu topraklarda neler yaşandı?</p>
+    </div>
+    <button class="ibtn" id="sideToggle" aria-expanded="true" aria-controls="sideBody" title="Listeyi daralt"></button>
+    <button class="ibtn" id="drawerClose" aria-label="Kayıtları kapat"></button>
+  </div>
+  <div class="search">
+    <span id="qIcon"></span>
+    <input id="q" type="search" placeholder="Ara: Hitit, Konya, savaş, UNESCO…" aria-label="Kayıtlarda ara" autocomplete="off" spellcheck="false" enterkeyhint="search">
+    <kbd id="qKbd" title="Aramaya geçmek için / tuşuna basın">/</kbd>
+    <button class="ibtn sm" id="qClear" aria-label="Aramayı temizle" hidden></button>
+  </div>
+  <div class="side-body" id="sideBody">
+    <div class="chips" id="kinds" role="group" aria-label="Tür filtresi"></div>
+    <div class="count" id="count" aria-live="polite"></div>
+    <div class="list" id="list"></div>
+    <div class="quiz-note">Sınav sürüyor; cevapları ele vermemek için liste gizlendi.</div>
+    <p class="foot">Tarihler çoğunlukla yaklaşıktır; konumu tartışmalı olanlar ayrıca belirtilir. ← → tuşlarıyla kronolojik gezinebilirsiniz. Yeni kayıt eklemek için <code>data/olaylar.js</code> dosyasındaki <code>OLAYLAR</code> listesini düzenleyin.</p>
+  </div>
+</aside>
+<button class="tbtn panel" id="drawerBtn" aria-label="Kayıtları aç"></button>
+<div id="scrim"></div>
+
+<nav id="top" aria-label="Araçlar">
+  <button class="tbtn panel" id="tourBtn" aria-pressed="false" title="Görünen kayıtları kronolojik sırayla gez"></button>
+  <button class="tbtn panel" id="quizBtn" aria-pressed="false" title="Bilgini sına"></button>
+  <button class="tbtn panel" id="hakBtn" aria-pressed="false" title="Hâkimiyet haritası: dönem dönem kim nereye hükmetti"></button>
+  <button class="tbtn panel" id="layersBtn" aria-expanded="false" aria-controls="layers" title="Harita, katmanlar ve lejant"></button>
+  <button class="tbtn panel icon" id="themeBtn"></button>
+</nav>
+<div id="layers" class="panel pop" role="dialog" aria-label="Katmanlar" hidden></div>
+
+<section id="sheet" class="panel" aria-label="Ayrıntılar" tabindex="-1">
+  <div class="grab" id="grab" aria-hidden="true"></div>
+  <div id="sheetBody"></div>
+</section>
+
+<div id="welcome" class="panel" role="dialog" aria-labelledby="wTitle" hidden></div>
+
+<footer id="dock" class="panel" aria-label="Zaman çizelgesi">
+  <div id="tourbar" hidden></div>
+  <div id="scrub" role="group" aria-label="Hâkimiyet haritası yılı" hidden></div>
+  <div class="tl-row">
+    <button class="pill" id="allBtn" aria-pressed="true" title="Tüm dönemleri göster">Tümü</button>
+    <div id="tl" role="group" aria-label="Dönemler"></div>
+    <button class="ibtn" id="tlX" aria-expanded="false" aria-controls="tl" title="Çentikleri göster"></button>
+  </div>
+  <p class="tl-hint" id="tlHint" hidden></p>
+</footer>
+<div id="hakPop" class="panel pop hak-pop" role="dialog" aria-labelledby="hakPopT" hidden></div>
+<div id="lb" role="dialog" aria-modal="true" aria-label="Görsel" hidden>
+  <button class="ibtn lb-x" id="lbClose" aria-label="Kapat (Esc)"></button>
+  <figure class="lb-fig">
+    <img id="lbImg" alt="">
+    <figcaption id="lbCap"></figcaption>
+  </figure>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script src="data/olaylar.js"></script>
+<script src="data/gorseller.js"></script>
+<script src="data/sinirlar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

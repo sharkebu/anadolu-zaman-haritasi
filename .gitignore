@@ -1,0 +1,16 @@
+# İşletim sistemi / düzenleyici artıkları
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# Araç önbelleği ve indirilen ham veriler (historical-basemaps geojson, API yanıtları)
+tools/cache/
+*.geojson
+__pycache__/
+node_modules/
+
+# Yerel önizleme ayarı
+.claude/
